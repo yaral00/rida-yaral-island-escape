@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Rida & Yaral: Island Escape</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0d0f12;
+        }
+        
+        body {
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #111;
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            z-index: 10;
+        }
+        
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .stats-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            font-size: 12px;
+        }
+        
+        .bar-container {
+            width: 120px;
+            height: 10px;
+            background: #222;
+            border-radius: 5px;
+            margin-top: 3px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        
+        .hp-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff416c, #ff4b2b);
+            transition: width 0.1s linear;
+        }
+        
+        .synergy-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00b4db, #0083b0);
+            transition: width 0.1s linear;
+        }
+        
+        .badge {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #aaa;
+        }
+        
+        .val-text {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .overlay-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 100;
+            backdrop-filter: blur(6px);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #ff4b2b, #00b4db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        p {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 20px;
+            max-width: 90vw;
+            text-align: center;
+            line-height: 1.5;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff4b2b, #ff416c);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            -webkit-appearance: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .controls-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            padding-bottom: 10px;
+            pointer-events: auto;
+            z-index: 20;
+        }
+        
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 75, 43, 0.6);
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            background: rgba(255, 75, 43, 0.9);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .dpad {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .dpad-row {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .dpad-btn {
+            width: 35px;
+            height: 35px;
+            background: rgba(100, 150, 255, 0.5);
+            border: 2px solid rgba(100, 150, 255, 0.8);
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .dpad-btn:active {
+            background: rgba(100, 150, 255, 0.9);
+            border-color: rgba(100, 150, 255, 1);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="ui-layer">
+            <div class="hud">
+                <div class="stats-box">
+                    <div class="badge" id="hero-name">Princess Rida</div>
+                    <div class="bar-container">
+                        <div id="player-hp" class="hp-fill"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-box" style="text-align: right;">
+                    <div class="badge" id="stage-title">Level 1</div>
+                    <div class="val-text" id="boss-info" style="color: #ff4b2b;">Enemies: 4</div>
+                </div>
+            </div>
+
+            <div class="hud" style="align-items: flex-end;">
+                <div class="stats-box hidden" id="synergy-box">
+                    <div class="badge" style="color: #00b4db;">Synergy</div>
+                    <div class="bar-container">
+                        <div id="synergy-hp" class="synergy-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay-screen">
+            <h1>RIDA & YARAL</h1>
+            <p>Battle through island guardians as Princess Rida. Unite with Prince Yaral and escape together!</p>
+            <button id="start-btn">BEGIN JOURNEY</button>
+        </div>
+
+        <!-- Level Transition Screen -->
+        <div id="transition-screen" class="overlay-screen hidden">
+            <h1 id="trans-title">TIER CLEARED!</h1>
+            <p id="trans-desc">Rida's magic grows stronger...</p>
+            <button id="next-btn">CONTINUE</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="overlay-screen hidden">
+            <h1 style="background: linear-gradient(45deg, #ff0000, #880000); -webkit-background-clip: text;">FALLEN</h1>
+            <p>The island's villains overwhelmed you. Try again!</p>
+            <button id="restart-btn">RETRY</button>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="overlay-screen hidden">
+            <h1 style="background: linear-gradient(45deg, #00b4db, #00ff88); -webkit-background-clip: text;">ESCAPED!</h1>
+            <p>Rida and Yaral shattered the island's defenses and set sail to freedom!</p>
+            <button id="playagain-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div class="controls-container">
+        <!-- D-Pad -->
+        <div class="dpad">
+            <div class="dpad-row">
+                <div style="width: 35px;"></div>
+                <button class="dpad-btn" id="jump-btn">↑</button>
+            </div>
+            <div class="dpad-row">
+                <button class="dpad-btn" id="left-btn">←</button>
+                <button class="dpad-btn" id="down-btn" style="visibility: hidden;"></button>
+                <button class="dpad-btn" id="right-btn">→</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <button class="control-btn" id="attack-btn" style="background: rgba(255, 100, 100, 0.6); border-color: rgba(255, 100, 100, 0.8);">ATTACK</button>
+        <button class="control-btn" id="magic-btn" style="background: rgba(100, 150, 255, 0.6); border-color: rgba(100, 150, 255, 0.8);">MAGIC</button>
+        <button class="control-btn hidden" id="synergy-btn" style="background: rgba(0, 180, 219, 0.6); border-color: rgba(0, 180, 219, 0.8);">UNITE</button>
+    </div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size to match window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // UI Elements
+        const startScreen = document.getElementById('start-screen');
+        const transitionScreen = document.getElementById('transition-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const victoryScreen = document.getElementById('victory-screen');
+        const playerHpBar = document.getElementById('player-hp');
+        const synergyHpBar = document.getElementById('synergy-hp');
+        const synergyBox = document.getElementById('synergy-box');
+        const stageTitle = document.getElementById('stage-title');
+        const bossInfo = document.getElementById('boss-info');
+        const heroName = document.getElementById('hero-name');
+
+        // Mobile Input State
+        const mobileInput = {
+            left: false,
+            right: false,
+            jump: false,
+            attack: false,
+            magic: false,
+            synergy: false
+        };
+
+        // Touch Event Listeners
+        document.getElementById('left-btn').addEventListener('touchstart', (e) => { e.preventDefault(); mobileInput.left = true; });
+        document.getElementById('left-btn').addEventListener('touchend', (e) => { e.preventDefault(); mobileInput.left = false; });
+        document.getElementById('left-btn').addEventListener('mousedown', () => mobileInput.left = true);
+        document.getElementById('left-btn').addEventListener('mouseup', () => mobileInput.left = false);
+
+        document.getElementById('right-btn').addEventListener('touchstart', (e) => { e.preventDefault(); mobileInput.right = true; });
+        document.getElementById('right-btn').addEventListener('touchend', (e) => { e.preventDefault(); mobileInput.right = false; });
+        document.getElementById('right-btn').addEventListener('mousedown', () => mobileInput.right = true);
+        document.getElementById('right-btn').addEventListener('mouseup', () => mobileInput.right = false);
+
+        document.getElementById('jump-btn').addEventListener('touchstart', (e) => { e.preventDefault(); mobileInput.jump = true; });
+        document.getElementById('jump-btn').addEventListener('touchend', (e) => { e.preventDefault(); mobileInput.jump = false; });
+        document.getElementById('jump-btn').addEventListener('mousedown', () => mobileInput.jump = true);
+        document.getElementById('jump-btn').addEventListener('mouseup', () => mobileInput.jump = false);
+
+        document.getElementById('attack-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleAttack(); });
+        document.getElementById('attack-btn').addEventListener('mousedown', handleAttack);
+
+        document.getElementById('magic-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleMagic(); });
+        document.getElementById('magic-btn').addEventListener('mousedown', handleMagic);
+
+        document.getElementById('synergy-btn').addEventListener('touchstart', (e) => { e.preventDefault(); handleSynergy(); });
+        document.getElementById('synergy-btn').addEventListener('mousedown', handleSynergy);
+
+        // UI Button Listeners
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('next-btn').addEventListener('click', nextLevel);
+        document.getElementById('restart-btn').addEventListener('click', restartLevel);
+        document.getElementById('playagain-btn').addEventListener('click', playAgain);
+
+        // Game State
+        let gameState = 'START';
+        let currentLevel = 1;
+
+        // Physics
+        const gravity = 0.4;
+        let groundY;
+
+        // Player
+        const player = {
+            x: 50,
+            y: 0,
+            width: 20,
+            height: 35,
+            vx: 0,
+            vy: 0,
+            speed: 4,
+            jumpStrength: -10,
+            isGrounded: false,
+            hp: 100,
+            maxHp: 100,
+            facing: 'right',
+            isAttacking: false,
+            attackTimer: 0,
+            magicCooldown: 0,
+            synergyMeter: 0,
+            color: '#ff416c'
+        };
+
+        // Yaral
+        const yaral = {
+            active: false,
+            x: 30,
+            y: 0,
+            width: 22,
+            height: 35,
+            facing: 'right',
+            color: '#00b4db',
+            attackCooldown: 0
+        };
+
+        // Game Objects
+        let projectiles = [];
+        let particles = [];
+        let enemies = [];
+
+        // Level Config
+        const levels = [
+            { id: 1, title: "Level 1: Shadows", enemyCount: 3, enemyType: "shadow", bg: "#1a1c23" },
+            { id: 2, title: "Level 2: Titans", enemyCount: 2, enemyType: "titan", bg: "#231a1c" },
+            { id: 3, title: "Level 3: Overlord", enemyCount: 1, enemyType: "overlord", bg: "#1f1a23" },
+            { id: 4, title: "Level 4: Escape!", enemyCount: 4, enemyType: "warden", bg: "#0f2027" }
+        ];
+
+        // Enemy Class
+        class Enemy {
+            constructor(type, x) {
+                this.type = type;
+                this.x = x;
+                this.y = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+                
+                if (type === 'shadow') {
+                    this.width = 18; this.height = 32;
+                    this.hp = 30; this.maxHp = 30;
+                    this.speed = 2; this.damage = 8;
+                    this.color = '#7b2cbf';
+                } else if (type === 'titan') {
+                    this.width = 30; this.height: 45;
+                    this.hp = 90; this.maxHp = 90;
+                    this.speed = 1; this.damage = 15;
+                    this.color = '#e63946';
+                } else if (type === 'overlord') {
+                    this.width = 35; this.height = 55;
+                    this.hp = 200; this.maxHp = 200;
+                    this.speed = 0.8; this.damage = 20;
+                    this.color = '#ffb703';
+                } else if (type === 'warden') {
+                    this.width = 20; this.height = 35;
+                    this.hp = 60; this.maxHp = 60;
+                    this.speed = 2.2; this.damage = 10;
+                    this.color = '#2a9d8f';
+                }
+
+                this.y = groundY - this.height;
+                this.attackCooldown = 0;
+                this.shield = (type === 'warden');
+            }
+
+            update() {
+                this.vy += gravity;
+                this.y += this.vy;
+                if (this.y + this.height >= groundY) {
+                    this.y = groundY - this.height;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                }
+
+                const dist = player.x - this.x;
+                if (Math.abs(dist) > 20) {
+                    this.vx = Math.sign(dist) * this.speed;
+                } else {
+                    this.vx = 0;
+                    this.attackPlayer();
+                }
+
+                this.x += this.vx;
+                if (this.attackCooldown > 0) this.attackCooldown--;
+            }
+
+            attackPlayer() {
+                if (this.attackCooldown === 0) {
+                    player.hp -= this.damage;
+                    this.attackCooldown = 50;
+                    createImpactParticles(player.x + 10, player.y + 15, '#ff0000');
+                    if (player.hp <= 0) {
+                        player.hp = 0;
+                        setGameOver();
+                    }
+                    updateHUD();
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                if (this.shield) {
+                    ctx.strokeStyle = '#00b4db';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
+                }
+
+                if (this.hp < this.maxHp) {
+                    ctx.fillStyle = '#222';
+                    ctx.fillRect(this.x, this.y - 8, this.width, 4);
+                    ctx.fillStyle = '#ff4b2b';
+                    ctx.fillRect(this.x, this.y - 8, (this.hp / this.maxHp) * this.width, 4);
+                }
+            }
+        }
+
+        // Projectile Class
+        class Projectile {
+            constructor(x, y, vx, color, damage = 25) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.radius = 4;
+                this.color = color;
+                this.damage = damage;
+                this.markedForDeletion = false;
+            }
+
+            update() {
+                this.x += this.vx;
+                if (this.x < 0 || this.x > canvas.width) this.markedForDeletion = true;
+
+                particles.push(new Particle(this.x, this.y, (Math.random() - 0.5) * 1, (Math.random() - 0.5) * 1, this.color, 10));
+
+                enemies.forEach(enemy => {
+                    if (this.x > enemy.x && this.x < enemy.x + enemy.width &&
+                        this.y > enemy.y && this.y < enemy.y + enemy.height) {
+                        
+                        let dmg = this.damage;
+                        if (enemy.shield) {
+                            enemy.shield = false;
+                            dmg = dmg * 0.5;
+                        }
+                        
+                        enemy.hp -= dmg;
+                        this.markedForDeletion = true;
+                        createImpactParticles(this.x, this.y, this.color);
+
+                        if (enemy.hp <= 0) {
+                            enemies = enemies.filter(e => e !== enemy);
+                            player.synergyMeter = Math.min(100, player.synergyMeter + 25);
+                            updateHUD();
+                            checkLevelCompletion();
+                        }
+                    }
+                });
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        // Particle Class
+        class Particle {
+            constructor(x, y, vx, vy, color, life = 15) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.life = life;
+                this.maxLife = life;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 2, 2);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // Game Functions
+        function initLevel(lvlIdx) {
+            currentLevel = lvlIdx;
+            const lvl = levels[lvlIdx - 1];
+            
+            player.x = 40;
+            player.y = groundY - player.height;
+            player.vx = 0;
+            player.vy = 0;
+
+            enemies = [];
+            const spacing = canvas.width / (lvl.enemyCount + 1);
+            for (let i = 0; i < lvl.enemyCount; i++) {
+                enemies.push(new Enemy(lvl.enemyType, spacing * (i + 1)));
+            }
+
+            if (currentLevel === 4) {
+                yaral.active = true;
+                heroName.textContent = "Rida & Yaral";
+                document.getElementById('synergy-btn').classList.remove('hidden');
+            } else {
+                yaral.active = false;
+                heroName.textContent = "Princess Rida";
+                document.getElementById('synergy-btn').classList.add('hidden');
+            }
+
+            stageTitle.textContent = lvl.title;
+            updateHUD();
+        }
+
+        function handleAttack() {
+            if (gameState !== 'PLAYING' || player.isAttacking) return;
+
+            player.isAttacking = true;
+            player.attackTimer = 10;
+
+            const attackX = player.facing === 'right' ? player.x + player.width : player.x - 25;
+            
+            enemies.forEach(enemy => {
+                if (attackX < enemy.x + enemy.width &&
+                    attackX + 25 > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y) {
+                    
+                    let dmg = 15;
+                    if (enemy.shield) dmg = 4;
+
+                    enemy.hp -= dmg;
+                    createImpactParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#fff');
+
+                    if (enemy.hp <= 0) {
+                        enemies = enemies.filter(e => e !== enemy);
+                        player.synergyMeter = Math.min(100, player.synergyMeter + 20);
+                        updateHUD();
+                        checkLevelCompletion();
+                    }
+                }
+            });
+        }
+
+        function handleMagic() {
+            if (gameState !== 'PLAYING' || player.magicCooldown > 0) return;
+
+            const vx = player.facing === 'right' ? 6 : -6;
+            projectiles.push(new Projectile(player.x + player.width/2, player.y + 10, vx, '#ff416c', 30));
+            player.magicCooldown = 25;
+        }
+
+        function handleSynergy() {
+            if (gameState !== 'PLAYING' || !yaral.active || player.synergyMeter < 100) return;
+
+            player.synergyMeter = 0;
+            updateHUD();
+
+            createImpactParticles(canvas.width/2, canvas.height/2, '#00b4db', 80);
+            
+            enemies.forEach(enemy => {
+                enemy.shield = false;
+                enemy.hp -= 80;
+            });
+
+            enemies = enemies.filter(e => e.hp > 0);
+            checkLevelCompletion();
+        }
+
+        function createImpactParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const vx = (Math.random() - 0.5) * 6;
+                const vy = (Math.random() - 0.5) * 6;
+                particles.push(new Particle(x, y, vx, vy, color, 20));
+            }
+        }
+
+        function checkLevelCompletion() {
+            if (enemies.length === 0) {
+                if (currentLevel < 4) {
+                    gameState = 'TRANSITION';
+                    if (currentLevel === 3) {
+                        document.getElementById('trans-title').textContent = "YARAL ARRIVES!";
+                        document.getElementById('trans-desc').textContent = "Time to escape together!";
+                    } else {
+                        document.getElementById('trans-title').textContent = "LEVEL CLEARED!";
+                        document.getElementById('trans-desc').textContent = "Powers growing stronger...";
+                    }
+                    transitionScreen.classList.remove('hidden');
+                } else {
+                    gameState = 'VICTORY';
+                    victoryScreen.classList.remove('hidden');
+                }
+            }
+        }
+
+        function setGameOver() {
+            gameState = 'GAMEOVER';
+            gameoverScreen.classList.remove('hidden');
+        }
+
+        function updateHUD() {
+            playerHpBar.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+            synergyHpBar.style.width = `${player.synergyMeter}%`;
+            bossInfo.textContent = `Enemies: ${enemies.length}`;
+        }
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            player.hp = 100;
+            player.synergyMeter = 0;
+            initLevel(1);
+        }
+
+        function nextLevel() {
+            transitionScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            initLevel(currentLevel + 1);
+        }
+
+        function restartLevel() {
+            gameoverScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            player.hp = 100;
+            player.synergyMeter = 0;
+            initLevel(currentLevel);
+        }
+
+        function playAgain() {
+            victoryScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            player.hp = 100;
+            player.synergyMeter = 0;
+            initLevel(1);
+        }
+
+        // Main Game Loop
+        function update() {
+            if (gameState === 'PLAYING') {
+                groundY = canvas.height * 0.8;
+
+                // Movement
+                if (mobileInput.left) {
+                    player.vx = -player.speed;
+                    player.facing = 'left';
+                } else if (mobileInput.right) {
+                    player.vx = player.speed;
+                    player.facing = 'right';
+                } else {
+                    player.vx = 0;
+                }
+
+                // Jump
+                if (mobileInput.jump && player.isGrounded) {
+                    player.vy = player.jumpStrength;
+                    player.isGrounded = false;
+                }
+
+                // Physics
+                player.vy += gravity;
+                player.x += player.vx;
+                player.y += player.vy;
+
+                // Boundaries
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+                
+                if (player.y + player.height >= groundY) {
+                    player.y = groundY - player.height;
+                    player.vy = 0;
+                    player.isGrounded = true;
+                }
+
+                // Timers
+                if (player.attackTimer > 0) player.attackTimer--;
+                if (player.isAttacking && player.attackTimer === 0) player.isAttacking = false;
+                if (player.magicCooldown > 0) player.magicCooldown--;
+
+                // Yaral AI
+                if (yaral.active) {
+                    const targetX = player.x - (player.facing === 'right' ? 30 : -30);
+                    yaral.x += (targetX - yaral.x) * 0.08;
+                    yaral.y = groundY - yaral.height;
+                    yaral.facing = player.facing;
+
+                    if (yaral.attackCooldown <= 0 && enemies.length > 0) {
+                        const nearestEnemy = enemies[0];
+                        if (Math.abs(nearestEnemy.x - yaral.x) < 150) {
+                            const vx = nearestEnemy.x > yaral.x ? 5 : -5;
+                            projectiles.push(new Projectile(yaral.x + yaral.width/2, yaral.y + 10, vx, '#00b4db', 18));
+                            yaral.attackCooldown = 50;
+                        }
+                    }
+                    if (yaral.attackCooldown > 0) yaral.attackCooldown--;
+                }
+
+                // Update entities
+                enemies.forEach(enemy => enemy.update());
+                projectiles.forEach(p => p.update());
+                particles.forEach(pt => pt.update());
+
+                projectiles = projectiles.filter(p => !p.markedForDeletion);
+                particles = particles.filter(pt => pt.life > 0);
+            }
+        }
+
+        function render() {
+            groundY = canvas.height * 0.8;
+
+            // Background
+            ctx.fillStyle = levels[currentLevel - 1].bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground
+            ctx.fillStyle = currentLevel === 4 ? '#d4a574' : '#2b2d42';
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            // Draw all entities
+            particles.forEach(pt => pt.draw());
+            projectiles.forEach(p => p.draw());
+            enemies.forEach(enemy => enemy.draw());
+
+            // Draw Yaral
+            if (yaral.active) {
+                ctx.fillStyle = yaral.color;
+                ctx.fillRect(yaral.x, yaral.y, yaral.width, yaral.height);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(yaral.x + 2, yaral.y + 2, yaral.width - 4, 4);
+            }
+
+            // Draw Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.fillStyle = '#ffb703';
+            ctx.fillRect(player.x + 2, player.y - 3, player.width - 4, 4);
+
+            // Attack indicator
+            if (player.isAttacking) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                const attackX = player.facing === 'right' ? player.x + player.width : player.x - 25;
+                ctx.fillRect(attackX, player.y, 25, player.height);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
